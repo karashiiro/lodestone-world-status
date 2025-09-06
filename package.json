@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --project tsconfig.test.json --noEmit",
     "format": "prettier --write .",
-    "lint": "prettier --check . && eslint src/ tests/"
+    "lint": "prettier --check . && eslint src/ tests/ examples/"
   },
   "keywords": [
     "lodestone",
