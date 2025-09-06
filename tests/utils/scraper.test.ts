@@ -3,6 +3,7 @@ import {
   fetchHtml,
   parseStatusText,
   parseWorldStatusGeneric,
+  parseWorldStatus,
 } from "../../src/utils/scraper.js";
 
 // Mock HTML content that simulates the Lodestone structure
@@ -105,6 +106,44 @@ describe("parseStatusText", () => {
     expect(result.population).toBe("congested");
     expect(result.newCharacterCreation).toBe(false);
   });
+
+  it("should handle empty string input", () => {
+    const result = parseStatusText("");
+    expect(result).toEqual({
+      status: "online",
+      population: "standard",
+      newCharacterCreation: true,
+    });
+  });
+
+  it("should handle whitespace-only input", () => {
+    const result = parseStatusText("   ");
+    expect(result).toEqual({
+      status: "online",
+      population: "standard",
+      newCharacterCreation: true,
+    });
+  });
+
+  it("should handle invalid status text", () => {
+    const result = parseStatusText("InvalidStatus");
+    expect(result).toEqual({
+      status: "online",
+      population: "standard",
+      newCharacterCreation: true,
+    });
+  });
+
+  it("should handle offline status", () => {
+    const result = parseStatusText("Offline");
+    expect(result.status).toBe("offline");
+  });
+
+  it("should handle maintenance with population", () => {
+    const result = parseStatusText("Maintenance Preferred");
+    expect(result.status).toBe("maintenance");
+    expect(result.population).toBe("preferred");
+  });
 });
 
 describe("parseWorldStatusGeneric", () => {
@@ -159,6 +198,245 @@ describe("parseWorldStatusGeneric", () => {
     `;
     const result = parseWorldStatusGeneric(badHtml);
     expect(result).toEqual([]);
+  });
+});
+
+describe("parseWorldStatus", () => {
+  const mockSpecificHtml = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <h3>Aether</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">Adamantoise</span>
+          <span class="worldstatus__status">Standard</span>
+        </li>
+        <li>
+          <span class="worldstatus__world-name">Cactuar</span>
+          <span class="worldstatus__status">Congested</span>
+        </li>
+      </ul>
+    </div>
+    <div class="worldstatus__datacenter">
+      <h3>Chaos</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">Cerberus</span>
+          <span class="worldstatus__status">Preferred</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+  `;
+
+  it("should parse world status with specific selectors", () => {
+    const result = parseWorldStatus(mockSpecificHtml);
+
+    expect(result).toHaveLength(2);
+
+    // Check Aether data center
+    const aether = result.find((dc) => dc.name === "Aether");
+    expect(aether).toBeDefined();
+    expect(aether?.region).toBe("na");
+    expect(aether?.worlds).toHaveLength(2);
+
+    const adamantoise = aether?.worlds.find((w) => w.name === "Adamantoise");
+    expect(adamantoise).toEqual({
+      name: "Adamantoise",
+      status: "online",
+      population: "standard",
+      newCharacterCreation: true,
+    });
+
+    // Check Chaos data center
+    const chaos = result.find((dc) => dc.name === "Chaos");
+    expect(chaos?.region).toBe("eu");
+  });
+
+  it("should throw error when no specific selectors found", () => {
+    const htmlWithoutSelectors =
+      "<html><body><div>No selectors</div></body></html>";
+    expect(() => parseWorldStatus(htmlWithoutSelectors)).toThrow(
+      "Could not find world status containers",
+    );
+  });
+
+  it("should skip sections without h3 elements", () => {
+    const htmlMissingH3 = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <ul><li><span class="worldstatus__world-name">World</span></li></ul>
+    </div>
+    <div class="worldstatus__datacenter">
+      <h3>Aether</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">Adamantoise</span>
+          <span class="worldstatus__status">Standard</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+    `;
+
+    const result = parseWorldStatus(htmlMissingH3);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("Aether");
+  });
+
+  it("should handle data centers without world lists", () => {
+    const htmlNoWorldList = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <h3>EmptyDataCenter</h3>
+    </div>
+  </body>
+</html>
+    `;
+
+    const result = parseWorldStatus(htmlNoWorldList);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("inferRegion", () => {
+  // We need to import the internal function for testing
+  // Since it's not exported, we'll test it through parseWorldStatus
+  it("should infer NA region for known NA data centers", () => {
+    const testDataCenters = ["Aether", "Crystal", "Dynamis", "Primal"];
+
+    testDataCenters.forEach((dcName) => {
+      const html = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <h3>${dcName}</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">TestWorld</span>
+          <span class="worldstatus__status">Standard</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+      `;
+      const result = parseWorldStatus(html);
+      expect(result[0]?.region).toBe("na");
+    });
+  });
+
+  it("should infer EU region for known EU data centers", () => {
+    const testDataCenters = ["Chaos", "Light"];
+
+    testDataCenters.forEach((dcName) => {
+      const html = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <h3>${dcName}</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">TestWorld</span>
+          <span class="worldstatus__status">Standard</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+      `;
+      const result = parseWorldStatus(html);
+      expect(result[0]?.region).toBe("eu");
+    });
+  });
+
+  it("should infer JP region for known JP data centers", () => {
+    const testDataCenters = ["Elemental", "Gaia", "Mana", "Meteor"];
+
+    testDataCenters.forEach((dcName) => {
+      const html = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <h3>${dcName}</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">TestWorld</span>
+          <span class="worldstatus__status">Standard</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+      `;
+      const result = parseWorldStatus(html);
+      expect(result[0]?.region).toBe("jp");
+    });
+  });
+
+  it("should infer OC region for known OC data centers", () => {
+    const html = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <h3>Materia</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">TestWorld</span>
+          <span class="worldstatus__status">Standard</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+    `;
+    const result = parseWorldStatus(html);
+    expect(result[0]?.region).toBe("oc");
+  });
+
+  it("should default to NA region for unknown data centers", () => {
+    const html = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <h3>UnknownDataCenter</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">TestWorld</span>
+          <span class="worldstatus__status">Standard</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+    `;
+    const result = parseWorldStatus(html);
+    expect(result[0]?.region).toBe("na");
+  });
+
+  it("should handle case insensitive data center names", () => {
+    const html = `
+<html>
+  <body>
+    <div class="worldstatus__datacenter">
+      <h3>CHAOS</h3>
+      <ul>
+        <li>
+          <span class="worldstatus__world-name">TestWorld</span>
+          <span class="worldstatus__status">Standard</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>
+    `;
+    const result = parseWorldStatus(html);
+    expect(result[0]?.region).toBe("eu");
   });
 });
 

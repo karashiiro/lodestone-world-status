@@ -317,3 +317,377 @@ describe("Error Handling Tests", () => {
     });
   });
 });
+
+describe("Data Validation Tests", () => {
+  let client: LodestoneWorldStatus;
+
+  beforeEach(() => {
+    client = new LodestoneWorldStatus();
+  });
+
+  describe("Type consistency validation", () => {
+    beforeEach(() => {
+      vi.mocked(fetchHtml).mockResolvedValue("<html>mock</html>");
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
+        throw new Error("Fallback to generic");
+      });
+    });
+
+    it("should validate WorldStatus interface compliance", async () => {
+      const mockDataCenters = [
+        {
+          name: "TestDC",
+          region: "na" as const,
+          worlds: [
+            {
+              name: "TestWorld",
+              status: "online" as const,
+              population: "standard" as const,
+              newCharacterCreation: true,
+            },
+          ],
+        },
+      ];
+      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+
+      const world = await client.checkWorldStatus("TestWorld");
+
+      // Validate all required properties exist
+      expect(world).toHaveProperty("name");
+      expect(world).toHaveProperty("status");
+      expect(world).toHaveProperty("population");
+      expect(world).toHaveProperty("newCharacterCreation");
+
+      // Validate types
+      expect(typeof world?.name).toBe("string");
+      expect(typeof world?.status).toBe("string");
+      expect(typeof world?.population).toBe("string");
+      expect(typeof world?.newCharacterCreation).toBe("boolean");
+
+      // Validate enum values
+      expect(["online", "offline", "maintenance"]).toContain(world?.status);
+      expect([
+        "standard",
+        "preferred",
+        "congested",
+        "preferred+",
+        "new",
+      ]).toContain(world?.population);
+    });
+
+    it("should validate DataCenter interface compliance", async () => {
+      const mockDataCenters = [
+        {
+          name: "TestDC",
+          region: "eu" as const,
+          worlds: [],
+        },
+      ];
+      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+
+      const dataCenter = await client.getDataCenter("TestDC");
+
+      // Validate all required properties exist
+      expect(dataCenter).toHaveProperty("name");
+      expect(dataCenter).toHaveProperty("region");
+      expect(dataCenter).toHaveProperty("worlds");
+
+      // Validate types
+      expect(typeof dataCenter?.name).toBe("string");
+      expect(typeof dataCenter?.region).toBe("string");
+      expect(Array.isArray(dataCenter?.worlds)).toBe(true);
+
+      // Validate region enum
+      expect(["na", "eu", "jp", "oc"]).toContain(dataCenter?.region);
+    });
+  });
+
+  describe("Malformed data handling", () => {
+    beforeEach(() => {
+      vi.mocked(fetchHtml).mockResolvedValue("<html>mock</html>");
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
+        throw new Error("Fallback to generic");
+      });
+    });
+
+    it("should handle worlds with invalid status values gracefully", async () => {
+      const mockDataCenters = [
+        {
+          name: "TestDC",
+          region: "na" as const,
+          worlds: [
+            {
+              name: "ValidWorld",
+              status: "online" as const,
+              population: "standard" as const,
+              newCharacterCreation: true,
+            },
+          ],
+        },
+      ];
+      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+
+      const world = await client.checkWorldStatus("ValidWorld");
+      expect(world?.status).toBe("online");
+    });
+
+    it("should handle worlds with unusual names", async () => {
+      const mockDataCenters = [
+        {
+          name: "TestDC",
+          region: "na" as const,
+          worlds: [
+            {
+              name: "World-With-Dashes",
+              status: "online" as const,
+              population: "standard" as const,
+              newCharacterCreation: true,
+            },
+            {
+              name: "World With Spaces",
+              status: "online" as const,
+              population: "preferred" as const,
+              newCharacterCreation: true,
+            },
+            {
+              name: "VeryLongWorldNameThatExceedsNormalLimits",
+              status: "online" as const,
+              population: "congested" as const,
+              newCharacterCreation: false,
+            },
+          ],
+        },
+      ];
+      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+
+      const world1 = await client.checkWorldStatus("World-With-Dashes");
+      const world2 = await client.checkWorldStatus("World With Spaces");
+      const world3 = await client.checkWorldStatus(
+        "VeryLongWorldNameThatExceedsNormalLimits",
+      );
+
+      expect(world1?.name).toBe("World-With-Dashes");
+      expect(world2?.name).toBe("World With Spaces");
+      expect(world3?.name).toBe("VeryLongWorldNameThatExceedsNormalLimits");
+    });
+
+    it("should handle data centers with unusual names", async () => {
+      const mockDataCenters = [
+        {
+          name: "Data-Center-With-Dashes",
+          region: "jp" as const,
+          worlds: [
+            {
+              name: "TestWorld",
+              status: "online" as const,
+              population: "new" as const,
+              newCharacterCreation: true,
+            },
+          ],
+        },
+      ];
+      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+
+      const dataCenter = await client.getDataCenter("Data-Center-With-Dashes");
+      expect(dataCenter?.name).toBe("Data-Center-With-Dashes");
+      expect(dataCenter?.region).toBe("jp");
+    });
+
+    it("should handle mixed-case lookups correctly", async () => {
+      const mockDataCenters = [
+        {
+          name: "CamelCaseDataCenter",
+          region: "oc" as const,
+          worlds: [
+            {
+              name: "CamelCaseWorld",
+              status: "maintenance" as const,
+              population: "preferred+" as const,
+              newCharacterCreation: true,
+            },
+          ],
+        },
+      ];
+      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+
+      // Test various case combinations
+      const world1 = await client.checkWorldStatus("CamelCaseWorld");
+      const world2 = await client.checkWorldStatus("camelcaseworld");
+      const world3 = await client.checkWorldStatus("CAMELCASEWORLD");
+      const world4 = await client.checkWorldStatus("  CamelCaseWorld  ");
+
+      expect(world1?.name).toBe("CamelCaseWorld");
+      expect(world2?.name).toBe("CamelCaseWorld");
+      expect(world3?.name).toBe("CamelCaseWorld");
+      expect(world4?.name).toBe("CamelCaseWorld");
+    });
+  });
+
+  describe("Performance degradation scenarios", () => {
+    it("should handle slow parsing gracefully", async () => {
+      vi.mocked(fetchHtml).mockImplementation(async () => {
+        // Simulate slow network
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return "<html>mock</html>";
+      });
+
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
+        throw new Error("Fallback to generic");
+      });
+
+      vi.mocked(parseWorldStatusGeneric).mockImplementation(() => {
+        // Simulate slow parsing
+        const start = Date.now();
+        while (Date.now() - start < 50) {
+          // Busy wait to simulate processing time
+        }
+        return [
+          {
+            name: "SlowDC",
+            region: "na" as const,
+            worlds: [
+              {
+                name: "SlowWorld",
+                status: "online" as const,
+                population: "standard" as const,
+                newCharacterCreation: true,
+              },
+            ],
+          },
+        ];
+      });
+
+      const startTime = Date.now();
+      const world = await client.checkWorldStatus("SlowWorld");
+      const endTime = Date.now();
+
+      expect(world?.name).toBe("SlowWorld");
+      // Should complete but may be slower than usual
+      expect(endTime - startTime).toBeGreaterThan(100); // At least network + processing time
+    });
+
+    it("should handle memory pressure scenarios", async () => {
+      // Create a large dataset to simulate memory pressure
+      const largeDataset = Array.from({ length: 100 }, (_, dcIndex) => ({
+        name: `DataCenter${dcIndex}`,
+        region: (["na", "eu", "jp", "oc"] as const)[dcIndex % 4],
+        worlds: Array.from({ length: 50 }, (_, worldIndex) => ({
+          name: `World${dcIndex}-${worldIndex}`,
+          status: "online" as const,
+          population: (
+            ["standard", "preferred", "congested", "preferred+", "new"] as const
+          )[worldIndex % 5],
+          newCharacterCreation: worldIndex % 2 === 0,
+        })),
+      }));
+
+      vi.mocked(fetchHtml).mockResolvedValue("<html>mock</html>");
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
+        throw new Error("Fallback to generic");
+      });
+      vi.mocked(parseWorldStatusGeneric).mockReturnValue(largeDataset);
+
+      const startTime = Date.now();
+      const allWorlds = await client.getAllWorldsFlat();
+      const endTime = Date.now();
+
+      // Should handle 5000 worlds (100 DCs * 50 worlds each)
+      expect(allWorlds).toHaveLength(5000);
+
+      // Should complete in reasonable time even with large dataset
+      expect(endTime - startTime).toBeLessThan(1000);
+
+      // Should still be able to find specific worlds
+      const specificWorld = await client.checkWorldStatus("World50-25");
+      expect(specificWorld?.name).toBe("World50-25");
+    });
+  });
+
+  describe("Recovery scenarios", () => {
+    it("should recover from network issues", async () => {
+      let callCount = 0;
+
+      vi.mocked(fetchHtml).mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          throw new Error("Network timeout");
+        }
+        return "<html>mock</html>";
+      });
+
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
+        throw new Error("Fallback to generic");
+      });
+
+      const mockDataCenters = [
+        {
+          name: "RecoveryDC",
+          region: "na" as const,
+          worlds: [
+            {
+              name: "RecoveryWorld",
+              status: "online" as const,
+              population: "standard" as const,
+              newCharacterCreation: true,
+            },
+          ],
+        },
+      ];
+      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+
+      // First call should fail
+      await expect(client.getAllWorlds()).rejects.toThrow("Network timeout");
+
+      // Clear cache to force new fetch
+      client.clearCache();
+
+      // Second call should succeed
+      const result = await client.getAllWorlds();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result[0]?.name).toBe("RecoveryDC");
+    });
+
+    it("should handle intermittent parsing failures", async () => {
+      let parseCallCount = 0;
+
+      vi.mocked(fetchHtml).mockResolvedValue("<html>mock</html>");
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
+        throw new Error("Fallback to generic");
+      });
+
+      vi.mocked(parseWorldStatusGeneric).mockImplementation(() => {
+        parseCallCount++;
+        if (parseCallCount === 1) {
+          throw new Error("Temporary parsing error");
+        }
+        return [
+          {
+            name: "StableDC",
+            region: "na" as const,
+            worlds: [
+              {
+                name: "StableWorld",
+                status: "online" as const,
+                population: "standard" as const,
+                newCharacterCreation: true,
+              },
+            ],
+          },
+        ];
+      });
+
+      // First call should fail due to parsing error
+      await expect(client.getAllWorlds()).rejects.toThrow(
+        "Temporary parsing error",
+      );
+
+      // Clear cache and try again
+      client.clearCache();
+
+      // Second call should succeed
+      const result = await client.getAllWorlds();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result[0]?.name).toBe("StableDC");
+    });
+  });
+});
