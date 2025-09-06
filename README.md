@@ -76,4 +76,7 @@ pnpm build
 
 # Lint
 pnpm lint
+
+# Format code
+pnpm format
 ```
