@@ -39,7 +39,7 @@ export class LodestoneWorldStatus {
       let dataCenters: DataCenter[];
       try {
         dataCenters = parseWorldStatus(html);
-      } catch (error) {
+      } catch {
         // Fallback to generic parsing if specific parsing fails
         dataCenters = parseWorldStatusGeneric(html);
       }

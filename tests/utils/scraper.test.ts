@@ -45,26 +45,6 @@ const mockHtml = `
 </html>
 `;
 
-const mockHtmlWithClasses = `
-<html>
-  <body>
-    <div class="worldstatus__datacenter">
-      <h3>Primal</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">Behemoth</span>
-          <span class="worldstatus__status">Standard</span>
-        </li>
-        <li>
-          <span class="worldstatus__world-name">Excalibur</span>
-          <span class="worldstatus__status">Congested</span>
-        </li>
-      </ul>
-    </div>
-  </body>
-</html>
-`;
-
 describe("parseStatusText", () => {
   it("should parse standard status", () => {
     const result = parseStatusText("Standard");
