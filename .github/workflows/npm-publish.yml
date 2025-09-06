@@ -12,7 +12,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: corepack enable
       - run: pnpm ci
+      - run: pnpm build
       - run: pnpm test
 
   publish-npm:
@@ -24,7 +26,9 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
+      - run: corepack enable
       - run: pnpm ci
+      - run: pnpm build
       - run: pnpm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
