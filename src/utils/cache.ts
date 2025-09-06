@@ -1,4 +1,5 @@
 import debug from "debug";
+import type { CacheStatistics } from "../types/index.js";
 
 const log = debug("lodestone-world-status:cache");
 
@@ -12,6 +13,11 @@ export class Cache<T> {
   private readonly expirationMs: number;
 
   constructor(expirationMs: number = 5 * 60 * 1000) {
+    if (expirationMs <= 0 || !Number.isInteger(expirationMs)) {
+      throw new Error(
+        `Cache expiration must be a positive integer, got: ${expirationMs}`,
+      );
+    }
     this.expirationMs = expirationMs;
     log("Cache initialized with %dms expiration", expirationMs);
   }
@@ -106,13 +112,7 @@ export class Cache<T> {
    * Get cache statistics
    * @returns Cache statistics object
    */
-  getStats(): {
-    hasData: boolean;
-    isValid: boolean;
-    ageMs: number | null;
-    timeUntilExpirationMs: number | null;
-    expirationMs: number;
-  } {
+  getStats(): CacheStatistics {
     return {
       hasData: this.hasData(),
       isValid: this.isValid(),

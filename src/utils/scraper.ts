@@ -1,6 +1,13 @@
 import debug from "debug";
 import { parse } from "node-html-parser";
-import { WorldStatus, WorldStatusRaw, DataCenter } from "../types/index.js";
+import type {
+  WorldStatus,
+  WorldStatusRaw,
+  DataCenter,
+  ParsedStatus,
+  Region,
+} from "../types/index.js";
+import { createWorldName, createDataCenterName } from "../types/index.js";
 
 const log = debug("lodestone-world-status:scraper");
 
@@ -69,7 +76,7 @@ export function parseWorldStatus(html: string): DataCenter[] {
         if (worldName && statusText) {
           log("Found world: %s (%s)", worldName, statusText);
           worlds.push({
-            name: worldName,
+            name: createWorldName(worldName),
             ...parseStatusText(statusText),
           });
         }
@@ -79,7 +86,7 @@ export function parseWorldStatus(html: string): DataCenter[] {
     if (worlds.length > 0) {
       log("Added data center %s with %d worlds", dcName, worlds.length);
       dataCenters.push({
-        name: dcName,
+        name: createDataCenterName(dcName),
         region: inferRegion(dcName),
         worlds,
       });
@@ -155,12 +162,12 @@ export function parseWorldStatusGeneric(html: string): DataCenter[] {
             dcName,
           );
           const parsedWorlds = worlds.map((w) => ({
-            name: w.name,
+            name: createWorldName(w.name),
             ...parseStatusText(w.statusText),
           }));
 
           dataCenters.push({
-            name: dcName,
+            name: createDataCenterName(dcName),
             region: inferRegion(dcName),
             worlds: parsedWorlds,
           });
@@ -180,11 +187,7 @@ export function parseWorldStatusGeneric(html: string): DataCenter[] {
 /**
  * Parses status text into structured data
  */
-export function parseStatusText(statusText: string): {
-  status: "online" | "offline" | "maintenance";
-  population: "standard" | "preferred" | "congested" | "preferred+" | "new";
-  newCharacterCreation: boolean;
-} {
+export function parseStatusText(statusText: string): ParsedStatus {
   const text = statusText.toLowerCase().trim();
 
   // Default to online unless we detect otherwise
@@ -226,7 +229,7 @@ export function parseStatusText(statusText: string): {
 /**
  * Infers region from data center name
  */
-function inferRegion(dcName: string): "na" | "eu" | "jp" | "oc" {
+function inferRegion(dcName: string): Region {
   const name = dcName.toLowerCase();
 
   // North American data centers

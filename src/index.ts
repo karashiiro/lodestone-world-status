@@ -7,9 +7,14 @@ import {
   parseWorldStatus,
   parseWorldStatusGeneric,
   Cache,
+  normalizeWorldName,
 } from "./utils/index.js";
-import { WorldStatus, DataCenter } from "./types/index.js";
-import { normalizeWorldName } from "./utils/index.js";
+import type {
+  WorldStatus,
+  DataCenter,
+  Region,
+  CacheStatistics,
+} from "./types/index.js";
 
 const log = debug("lodestone-world-status");
 
@@ -17,9 +22,9 @@ const log = debug("lodestone-world-status");
  * Main library functionality for checking Lodestone world status
  */
 export class LodestoneWorldStatus {
-  private baseUrl = "https://na.finalfantasyxiv.com/lodestone";
-  private worldStatusUrl = `${this.baseUrl}/worldstatus/`;
-  private cache: Cache<DataCenter[]>;
+  private readonly baseUrl: string = "https://na.finalfantasyxiv.com/lodestone";
+  private readonly worldStatusUrl: string = `${this.baseUrl}/worldstatus/`;
+  private readonly cache: Cache<DataCenter[]>;
 
   constructor(cacheExpirationMs: number = 5 * 60 * 1000) {
     this.cache = new Cache<DataCenter[]>(cacheExpirationMs);
@@ -165,9 +170,7 @@ export class LodestoneWorldStatus {
    * @param region The region to filter by
    * @returns Promise resolving to array of data centers in the region
    */
-  async getWorldsByRegion(
-    region: "na" | "eu" | "jp" | "oc",
-  ): Promise<DataCenter[]> {
+  async getWorldsByRegion(region: Region): Promise<DataCenter[]> {
     const dataCenters = await this.fetchWorldStatus();
     return dataCenters.filter((dc) => dc.region === region);
   }
@@ -182,7 +185,7 @@ export class LodestoneWorldStatus {
   /**
    * Get cache statistics for debugging/monitoring
    */
-  getCacheStats() {
+  getCacheStats(): CacheStatistics {
     return this.cache.getStats();
   }
 }

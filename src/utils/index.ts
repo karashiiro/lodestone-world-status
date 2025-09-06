@@ -9,13 +9,3 @@ export * from "./cache.js";
 export function normalizeWorldName(worldName: string): string {
   return worldName.toLowerCase().trim();
 }
-
-/**
- * Utility function to validate world names
- * @param worldName The world name to validate
- * @returns Whether the world name is valid
- */
-export function isValidWorldName(worldName: string): boolean {
-  const trimmed = worldName.trim();
-  return trimmed.length > 0 && /^[a-zA-Z\s]+$/.test(trimmed);
-}

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { LodestoneWorldStatus } from "../src/index.js";
+import { createTestDataCenter } from "./test-helpers.js";
 
 // Mock the scraper functions to avoid actual HTTP calls in tests
 vi.mock("../src/utils/scraper.js", () => ({
@@ -116,17 +117,10 @@ describe("LodestoneWorldStatus", () => {
 });
 
 describe("LodestoneWorldStatus - Constructor Edge Cases", () => {
-  it("should handle zero cache expiration (no caching)", async () => {
-    const noCacheClient = new LodestoneWorldStatus(0);
-
-    // Each call should fetch fresh data
-    const result1 = await noCacheClient.getAllWorlds();
-    const result2 = await noCacheClient.getAllWorlds();
-
-    expect(result1).toEqual(result2);
-    // Both should work even with no caching
-    expect(Array.isArray(result1)).toBe(true);
-    expect(Array.isArray(result2)).toBe(true);
+  it("should reject zero cache expiration", () => {
+    expect(() => new LodestoneWorldStatus(0)).toThrow(
+      "Cache expiration must be a positive integer, got: 0",
+    );
   });
 
   it("should handle very large cache expiration values", async () => {
@@ -140,11 +134,10 @@ describe("LodestoneWorldStatus - Constructor Edge Cases", () => {
     expect(stats.expirationMs).toBe(24 * 60 * 60 * 1000);
   });
 
-  it("should handle negative cache values gracefully", async () => {
-    // Negative values should be handled by the cache implementation
-    const negativeCache = new LodestoneWorldStatus(-1000);
-    const result = await negativeCache.getAllWorlds();
-    expect(Array.isArray(result)).toBe(true);
+  it("should reject negative cache values", () => {
+    expect(() => new LodestoneWorldStatus(-1000)).toThrow(
+      "Cache expiration must be a positive integer, got: -1000",
+    );
   });
 });
 
@@ -198,37 +191,36 @@ describe("LodestoneWorldStatus - Large Dataset Handling", () => {
     );
 
     parseWorldStatusGenericMock.mockReturnValue([
-      {
-        name: "Aether",
-        region: "na" as const,
-        worlds: Array.from({ length: 20 }, (_, i) => ({
+      createTestDataCenter(
+        "Aether",
+        "na",
+        Array.from({ length: 20 }, (_, i) => ({
           name: `World${i + 1}`,
-          status: "online" as const,
-          population:
-            i % 2 === 0 ? ("standard" as const) : ("preferred" as const),
+          status: "online",
+          population: i % 2 === 0 ? "standard" : "preferred",
           newCharacterCreation: true,
         })),
-      },
-      {
-        name: "Crystal",
-        region: "na" as const,
-        worlds: Array.from({ length: 15 }, (_, i) => ({
+      ),
+      createTestDataCenter(
+        "Crystal",
+        "na",
+        Array.from({ length: 15 }, (_, i) => ({
           name: `CrystalWorld${i + 1}`,
-          status: "online" as const,
-          population: "congested" as const,
+          status: "online",
+          population: "congested",
           newCharacterCreation: false,
         })),
-      },
-      {
-        name: "Chaos",
-        region: "eu" as const,
-        worlds: Array.from({ length: 25 }, (_, i) => ({
+      ),
+      createTestDataCenter(
+        "Chaos",
+        "eu",
+        Array.from({ length: 25 }, (_, i) => ({
           name: `EuWorld${i + 1}`,
-          status: "online" as const,
-          population: "new" as const,
+          status: "online",
+          population: "new",
           newCharacterCreation: true,
         })),
-      },
+      ),
     ]);
   });
 
@@ -281,24 +273,24 @@ describe("LodestoneWorldStatus - Unknown Data Centers", () => {
     );
 
     parseWorldStatusGenericMock.mockReturnValue([
-      {
-        name: "UnknownDataCenter",
-        region: "na" as const, // Should default to NA for unknown DCs
-        worlds: [
+      createTestDataCenter(
+        "UnknownDataCenter",
+        "na", // Should default to NA for unknown DCs
+        [
           {
             name: "UnknownWorld1",
-            status: "online" as const,
-            population: "standard" as const,
+            status: "online",
+            population: "standard",
             newCharacterCreation: true,
           },
           {
             name: "UnknownWorld2",
-            status: "maintenance" as const,
-            population: "preferred+" as const,
+            status: "maintenance",
+            population: "preferred+",
             newCharacterCreation: true,
           },
         ],
-      },
+      ),
     ]);
   });
 

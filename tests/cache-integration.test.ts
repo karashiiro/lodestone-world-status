@@ -159,15 +159,10 @@ describe("Cache Integration Tests", () => {
       expect(vi.mocked(fetchHtml)).toHaveBeenCalledTimes(2); // Should have fetched again
     });
 
-    it("should handle zero cache expiration (no caching)", async () => {
-      const noCacheClient = new LodestoneWorldStatus(0); // No caching
-
-      await noCacheClient.getAllWorlds();
-      expect(vi.mocked(fetchHtml)).toHaveBeenCalledTimes(1);
-
-      // Immediate second call should fetch again
-      await noCacheClient.getAllWorlds();
-      expect(vi.mocked(fetchHtml)).toHaveBeenCalledTimes(2);
+    it("should reject zero cache expiration", () => {
+      expect(() => new LodestoneWorldStatus(0)).toThrow(
+        "Cache expiration must be a positive integer, got: 0",
+      );
     });
   });
 

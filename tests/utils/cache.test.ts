@@ -280,13 +280,10 @@ describe("Cache", () => {
       expect(shortCache.get()).toBeNull();
     });
 
-    it("should handle zero expiration time", () => {
-      const zeroCache = new Cache<string>(0);
-      zeroCache.set("test");
-
-      // Should be immediately expired
-      expect(zeroCache.get()).toBeNull();
-      expect(zeroCache.isValid()).toBe(false);
+    it("should reject zero expiration time", () => {
+      expect(() => new Cache<string>(0)).toThrow(
+        "Cache expiration must be a positive integer, got: 0",
+      );
     });
   });
 });

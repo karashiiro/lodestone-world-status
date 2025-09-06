@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { normalizeWorldName, isValidWorldName } from "../../src/utils/index.js";
+import { normalizeWorldName } from "../../src/utils/index.js";
+import { isValidWorldName } from "../../src/types/index.js";
 
 describe("Utils", () => {
   describe("normalizeWorldName", () => {
@@ -21,13 +22,16 @@ describe("Utils", () => {
       expect(isValidWorldName("Excalibur")).toBe(true);
       expect(isValidWorldName("Primal Server")).toBe(true);
       expect(isValidWorldName("Midgardsormr")).toBe(true);
+      expect(isValidWorldName("World123")).toBe(true);
+      expect(isValidWorldName("Test-World")).toBe(true);
+      expect(isValidWorldName("World'sName")).toBe(true);
     });
 
     it("should reject invalid world names", () => {
       expect(isValidWorldName("")).toBe(false);
-      expect(isValidWorldName("123")).toBe(false);
-      expect(isValidWorldName("World123")).toBe(false);
       expect(isValidWorldName("@#$%")).toBe(false);
+      expect(isValidWorldName("World@123")).toBe(false);
+      expect(isValidWorldName("World#Name")).toBe(false);
     });
 
     it("should handle edge cases", () => {
