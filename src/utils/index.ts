@@ -1,4 +1,5 @@
 export * from "./scraper.js";
+export * from "./cache.js";
 
 /**
  * Utility function to normalize world names for API calls

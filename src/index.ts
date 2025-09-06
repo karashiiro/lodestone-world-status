@@ -6,7 +6,8 @@ import {
   fetchHtml,
   parseWorldStatus,
   parseWorldStatusGeneric,
-} from "./utils/scraper.js";
+  Cache,
+} from "./utils/index.js";
 import { WorldStatus, DataCenter } from "./types/index.js";
 import { normalizeWorldName } from "./utils/index.js";
 
@@ -18,23 +19,21 @@ const log = debug("lodestone-world-status");
 export class LodestoneWorldStatus {
   private baseUrl = "https://na.finalfantasyxiv.com/lodestone";
   private worldStatusUrl = `${this.baseUrl}/worldstatus/`;
+  private cache: Cache<DataCenter[]>;
 
-  private cachedData: DataCenter[] | null = null;
-  private lastFetchTime: number = 0;
-  private cacheExpirationMs = 5 * 60 * 1000; // 5 minutes
+  constructor(cacheExpirationMs: number = 5 * 60 * 1000) {
+    this.cache = new Cache<DataCenter[]>(cacheExpirationMs);
+  }
 
   /**
    * Fetches fresh world status data from Lodestone
    * @returns Promise resolving to array of data centers with world status
    */
   async fetchWorldStatus(): Promise<DataCenter[]> {
-    const now = Date.now();
-
-    // Return cached data if it's still fresh
-    if (this.cachedData && now - this.lastFetchTime < this.cacheExpirationMs) {
-      const cacheAge = Math.round((now - this.lastFetchTime) / 1000);
-      log("Cache hit - returning cached data (age: %ds)", cacheAge);
-      return this.cachedData;
+    // Check cache first
+    const cachedData = this.cache.get();
+    if (cachedData) {
+      return cachedData;
     }
 
     log("Cache miss - fetching fresh data from %s", this.worldStatusUrl);
@@ -68,8 +67,7 @@ export class LodestoneWorldStatus {
       }
 
       // Cache the results
-      this.cachedData = dataCenters;
-      this.lastFetchTime = now;
+      this.cache.set(dataCenters);
 
       const totalWorlds = dataCenters.reduce(
         (sum, dc) => sum + dc.worlds.length,
@@ -178,8 +176,13 @@ export class LodestoneWorldStatus {
    * Clear the cache to force fresh data on next request
    */
   clearCache(): void {
-    log("Cache cleared - next request will fetch fresh data");
-    this.cachedData = null;
-    this.lastFetchTime = 0;
+    this.cache.clear();
+  }
+
+  /**
+   * Get cache statistics for debugging/monitoring
+   */
+  getCacheStats() {
+    return this.cache.getStats();
   }
 }
