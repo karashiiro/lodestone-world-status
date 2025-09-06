@@ -1,17 +1,17 @@
 export interface WorldStatus {
   name: string;
   status: "online" | "offline" | "maintenance";
-  population?: "low" | "standard" | "preferred" | "congested";
-  newCharacterCreation?: boolean;
+  population: "standard" | "preferred" | "congested" | "preferred+" | "new";
+  newCharacterCreation: boolean;
+}
+
+export interface WorldStatusRaw {
+  name: string;
+  statusText: string;
 }
 
 export interface DataCenter {
   name: string;
   region: "na" | "eu" | "jp" | "oc";
   worlds: WorldStatus[];
-}
-
-export interface LodestoneResponse {
-  dataCenters: DataCenter[];
-  lastUpdated: Date;
 }

@@ -1,3 +1,5 @@
+export * from "./scraper.js";
+
 /**
  * Utility function to normalize world names for API calls
  * @param worldName The world name to normalize
@@ -13,5 +15,6 @@ export function normalizeWorldName(worldName: string): string {
  * @returns Whether the world name is valid
  */
 export function isValidWorldName(worldName: string): boolean {
-  return worldName.length > 0 && /^[a-zA-Z\s]+$/.test(worldName);
+  const trimmed = worldName.trim();
+  return trimmed.length > 0 && /^[a-zA-Z\s]+$/.test(trimmed);
 }

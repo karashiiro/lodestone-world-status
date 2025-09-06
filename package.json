@@ -1,6 +1,7 @@
 {
   "name": "lodestone-world-status",
   "version": "1.0.0",
+  "type": "module",
   "description": "A library for checking Lodestone world status",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -30,8 +31,11 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^5.9.2",
     "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "node-html-parser": "^7.0.1"
   }
 }
