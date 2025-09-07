@@ -5,202 +5,94 @@ import {
   parseWorldStatus,
 } from "../../src/utils/scraper.js";
 
-// Mock HTML content that mirrors the real Lodestone structure more accurately
-// The key insight is that when the complex HTML is parsed by node-html-parser,
-// the .text property collapses nested content with whitespace, making patterns like "Adamantoise\n\t\tCongested"
+// Helper functions to generate realistic Lodestone HTML structure
+function createWorldListItem(
+  worldName: string,
+  status: string,
+  canCreateCharacter = true
+): string {
+  const characterIcon = canCreateCharacter
+    ? 'world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"'
+    : 'world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"';
+
+  return `
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>${worldName}</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>${status}</p>
+            </div>
+            <div class="world-list__create_character">
+              
+              <i class="${characterIcon}"></i>
+              
+            </div>
+          </div>
+        </li>`;
+}
+
+function createDataCenterSection(
+  dcName: string,
+  worlds: Array<{ name: string; status: string; canCreate?: boolean }>
+): string {
+  const worldItems = worlds
+    .map((w) =>
+      createWorldListItem(
+        w.name,
+        w.status,
+        w.canCreate ?? w.status !== "Congested"
+      )
+    )
+    .join("");
+
+  return `
+      <h2 class="world-dcgroup__header">${dcName}</h2>
+      <ul class="world-dcgroup__list">${worldItems}
+      </ul>`;
+}
+
+function createTestHtml(
+  dcName: string,
+  worldName = "TestWorld",
+  status = "Standard"
+): string {
+  return `
+<html>
+  <body>
+    <section class="ldst__contents--worldstatus">${createDataCenterSection(dcName, [{ name: worldName, status }])}
+    </section>
+  </body>
+</html>
+  `;
+}
+
 const mockHtml = `
 <html>
   <body>
-    <section class="ldst__contents--worldstatus">
-      <h2 class="world-dcgroup__header">Aether</h2>
-      <ul class="world-dcgroup__list">
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Adamantoise</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Congested</p>
-            </div>
-            <div class="world-list__create_character">
-              
-              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
-              
-            </div>
-          </div>
-        </li>
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Cactuar</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Congested</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
-            </div>
-          </div>
-        </li>
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Faerie</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"></i>
-            </div>
-          </div>
-        </li>
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Gilgamesh</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"></i>
-            </div>
-          </div>
-        </li>
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Jenova</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"></i>
-            </div>
-          </div>
-        </li>
-      </ul>
-      
-      <h2 class="world-dcgroup__header">Crystal</h2>
-      <ul class="world-dcgroup__list">
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Balmung</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Congested</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
-            </div>
-          </div>
-        </li>
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Brynhildr</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Congested</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
-            </div>
-          </div>
-        </li>
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Coeurl</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"></i>
-            </div>
-          </div>
-        </li>
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Diabolos</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Congested</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
-            </div>
-          </div>
-        </li>
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__status_icon">
-              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
-            </div>
-            <div class="world-list__world_name">
-              
-              <p>Goblin</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Congested</p>
-            </div>
-            <div class="world-list__create_character">
-              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
-            </div>
-          </div>
-        </li>
-      </ul>
+    <section class="ldst__contents--worldstatus">${createDataCenterSection(
+      "Aether",
+      [
+        { name: "Adamantoise", status: "Congested" },
+        { name: "Cactuar", status: "Congested" },
+        { name: "Faerie", status: "Standard" },
+        { name: "Gilgamesh", status: "Standard" },
+        { name: "Jenova", status: "Standard" },
+      ]
+    )}
+      ${createDataCenterSection("Crystal", [
+        { name: "Balmung", status: "Congested" },
+        { name: "Brynhildr", status: "Congested" },
+        { name: "Coeurl", status: "Standard" },
+        { name: "Diabolos", status: "Congested" },
+        { name: "Goblin", status: "Congested" },
+      ])}
     </section>
   </body>
 </html>
@@ -368,29 +260,7 @@ describe("inferRegion", () => {
     const testDataCenters = ["Aether", "Crystal", "Dynamis", "Primal"];
 
     testDataCenters.forEach((dcName) => {
-      const html = `
-<html>
-  <body>
-    <section class="ldst__contents--worldstatus">
-      <h2 class="world-dcgroup__header">${dcName}</h2>
-      <ul class="world-dcgroup__list">
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__world_name">
-              
-              <p>TestWorld</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </body>
-</html>
-      `;
+      const html = createTestHtml(dcName);
       const result = parseWorldStatus(html);
       expect(result[0]?.region).toBe("na");
     });
@@ -400,29 +270,7 @@ describe("inferRegion", () => {
     const testDataCenters = ["Chaos", "Light"];
 
     testDataCenters.forEach((dcName) => {
-      const html = `
-<html>
-  <body>
-    <section class="ldst__contents--worldstatus">
-      <h2 class="world-dcgroup__header">${dcName}</h2>
-      <ul class="world-dcgroup__list">
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__world_name">
-              
-              <p>TestWorld</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </body>
-</html>
-      `;
+      const html = createTestHtml(dcName);
       const result = parseWorldStatus(html);
       expect(result[0]?.region).toBe("eu");
     });
@@ -432,114 +280,26 @@ describe("inferRegion", () => {
     const testDataCenters = ["Elemental", "Gaia", "Mana", "Meteor"];
 
     testDataCenters.forEach((dcName) => {
-      const html = `
-<html>
-  <body>
-    <section class="ldst__contents--worldstatus">
-      <h2 class="world-dcgroup__header">${dcName}</h2>
-      <ul class="world-dcgroup__list">
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__world_name">
-              
-              <p>TestWorld</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </body>
-</html>
-      `;
+      const html = createTestHtml(dcName);
       const result = parseWorldStatus(html);
       expect(result[0]?.region).toBe("jp");
     });
   });
 
   it("should infer OC region for known OC data centers", () => {
-    const html = `
-<html>
-  <body>
-    <section class="ldst__contents--worldstatus">
-      <h2 class="world-dcgroup__header">Materia</h2>
-      <ul class="world-dcgroup__list">
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__world_name">
-              
-              <p>TestWorld</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </body>
-</html>
-    `;
+    const html = createTestHtml("Materia");
     const result = parseWorldStatus(html);
     expect(result[0]?.region).toBe("oc");
   });
 
   it("should default to NA region for unknown data centers", () => {
-    const html = `
-<html>
-  <body>
-    <section class="ldst__contents--worldstatus">
-      <h2 class="world-dcgroup__header">UnknownDataCenter</h2>
-      <ul class="world-dcgroup__list">
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__world_name">
-              
-              <p>TestWorld</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </body>
-</html>
-    `;
+    const html = createTestHtml("UnknownDataCenter");
     const result = parseWorldStatus(html);
     expect(result[0]?.region).toBe("na");
   });
 
   it("should handle case insensitive data center names", () => {
-    const html = `
-<html>
-  <body>
-    <section class="ldst__contents--worldstatus">
-      <h2 class="world-dcgroup__header">CHAOS</h2>
-      <ul class="world-dcgroup__list">
-        <li class="item-list">
-          <div class="world-list__item">
-            <div class="world-list__world_name">
-              
-              <p>TestWorld</p>
-              
-            </div>
-            <div class="world-list__world_category">
-              <p>Standard</p>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-  </body>
-</html>
-    `;
+    const html = createTestHtml("CHAOS");
     const result = parseWorldStatus(html);
     expect(result[0]?.region).toBe("eu");
   });
@@ -565,7 +325,7 @@ describe("fetchHtml", () => {
     });
 
     await expect(fetchHtml("https://example.com/404")).rejects.toThrow(
-      "HTTP error! status: 404",
+      "HTTP error! status: 404"
     );
   });
 
@@ -573,7 +333,7 @@ describe("fetchHtml", () => {
     global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
 
     await expect(fetchHtml("https://example.com")).rejects.toThrow(
-      "Network error",
+      "Network error"
     );
   });
 });
