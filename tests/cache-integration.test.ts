@@ -5,14 +5,9 @@ import { LodestoneWorldStatus } from "../src/index.js";
 vi.mock("../src/utils/scraper.js", () => ({
   fetchHtml: vi.fn(),
   parseWorldStatus: vi.fn(),
-  parseWorldStatusGeneric: vi.fn(),
 }));
 
-import {
-  fetchHtml,
-  parseWorldStatus,
-  parseWorldStatusGeneric,
-} from "../src/utils/scraper.js";
+import { fetchHtml, parseWorldStatus } from "../src/utils/scraper.js";
 
 describe("Cache Integration Tests", () => {
   let client: LodestoneWorldStatus;
@@ -46,7 +41,7 @@ describe("Cache Integration Tests", () => {
     vi.mocked(parseWorldStatus).mockImplementation(() => {
       throw new Error("Specific selectors not found");
     });
-    vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+    vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
   });
 
   afterEach(() => {
@@ -186,7 +181,7 @@ describe("Cache Integration Tests", () => {
     });
 
     it("should not cache data when parsing fails", async () => {
-      vi.mocked(parseWorldStatusGeneric).mockImplementationOnce(() => {
+      vi.mocked(parseWorldStatus).mockImplementationOnce(() => {
         throw new Error("Parse error");
       });
 

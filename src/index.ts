@@ -5,7 +5,6 @@ import debug from "debug";
 import {
   fetchHtml,
   parseWorldStatus,
-  parseWorldStatusGeneric,
   Cache,
   normalizeWorldName,
 } from "./utils/index.js";
@@ -47,29 +46,13 @@ export class LodestoneWorldStatus {
       const html = await fetchHtml(this.worldStatusUrl);
       log("Successfully fetched HTML (%d characters)", html.length);
 
-      // Try parsing with specific selectors first, fall back to generic
-      let dataCenters: DataCenter[];
-      try {
-        log("Attempting to parse with specific selectors");
-        dataCenters = parseWorldStatus(html);
-        log(
-          "Successfully parsed with specific selectors: %d data centers",
-          dataCenters.length,
-        );
-      } catch (specificError) {
-        log(
-          "Specific selector parsing failed: %s",
-          specificError instanceof Error
-            ? specificError.message
-            : "Unknown error",
-        );
-        log("Falling back to generic parsing");
-        dataCenters = parseWorldStatusGeneric(html);
-        log(
-          "Successfully parsed with generic selectors: %d data centers",
-          dataCenters.length,
-        );
-      }
+      // Parse world status using semantic HTML structure parsing
+      log("Parsing world status data");
+      const dataCenters = parseWorldStatus(html);
+      log(
+        "Successfully parsed world status: %d data centers",
+        dataCenters.length,
+      );
 
       // Cache the results
       this.cache.set(dataCenters);

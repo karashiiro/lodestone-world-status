@@ -5,14 +5,9 @@ import { LodestoneWorldStatus } from "../src/index.js";
 vi.mock("../src/utils/scraper.js", () => ({
   fetchHtml: vi.fn(),
   parseWorldStatus: vi.fn(),
-  parseWorldStatusGeneric: vi.fn(),
 }));
 
-import {
-  fetchHtml,
-  parseWorldStatus,
-  parseWorldStatusGeneric,
-} from "../src/utils/scraper.js";
+import { fetchHtml, parseWorldStatus } from "../src/utils/scraper.js";
 
 describe("Error Handling Tests", () => {
   let client: LodestoneWorldStatus;
@@ -65,49 +60,18 @@ describe("Error Handling Tests", () => {
       vi.mocked(fetchHtml).mockResolvedValue("<html>mock</html>");
     });
 
-    it("should handle both specific and generic parsing failures", async () => {
+    it("should handle parsing failures", async () => {
       vi.mocked(parseWorldStatus).mockImplementation(() => {
-        throw new Error("Specific selectors failed");
-      });
-      vi.mocked(parseWorldStatusGeneric).mockImplementation(() => {
-        throw new Error("Generic parsing failed");
+        throw new Error("Parsing failed");
       });
 
       await expect(client.getAllWorlds()).rejects.toThrow(
-        "Failed to fetch world status: Generic parsing failed",
+        "Failed to fetch world status: Parsing failed",
       );
-    });
-
-    it("should successfully fallback when specific parsing fails", async () => {
-      const mockDataCenters = [
-        {
-          name: "Aether",
-          region: "na" as const,
-          worlds: [
-            {
-              name: "Adamantoise",
-              status: "online" as const,
-              population: "standard" as const,
-              newCharacterCreation: true,
-            },
-          ],
-        },
-      ];
-
-      vi.mocked(parseWorldStatus).mockImplementation(() => {
-        throw new Error("Specific selectors not found");
-      });
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
-
-      const result = await client.getAllWorlds();
-      expect(result).toEqual(mockDataCenters);
     });
 
     it("should handle empty or malformed HTML", async () => {
       vi.mocked(parseWorldStatus).mockImplementation(() => {
-        throw new Error("No valid HTML structure found");
-      });
-      vi.mocked(parseWorldStatusGeneric).mockImplementation(() => {
         throw new Error("Cannot parse empty HTML");
       });
 
@@ -120,13 +84,10 @@ describe("Error Handling Tests", () => {
   describe("edge cases", () => {
     beforeEach(() => {
       vi.mocked(fetchHtml).mockResolvedValue("<html>mock</html>");
-      vi.mocked(parseWorldStatus).mockImplementation(() => {
-        throw new Error("Fallback to generic");
-      });
     });
 
     it("should handle empty data center arrays", async () => {
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue([]);
+      vi.mocked(parseWorldStatus).mockReturnValue([]);
 
       const result = await client.getAllWorlds();
       expect(result).toEqual([]);
@@ -143,7 +104,7 @@ describe("Error Handling Tests", () => {
           worlds: [],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       const result = await client.getAllWorlds();
       expect(result).toEqual(mockDataCenters);
@@ -167,7 +128,7 @@ describe("Error Handling Tests", () => {
           ],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       // All these should find the world
       const world1 = await client.checkWorldStatus("Adamantoise");
@@ -196,7 +157,7 @@ describe("Error Handling Tests", () => {
           ],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       // All these should find the data center
       const dc1 = await client.getDataCenter("Aether");
@@ -218,7 +179,7 @@ describe("Error Handling Tests", () => {
           worlds: [],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       const naDataCenters = await client.getWorldsByRegion("na");
       expect(naDataCenters).toHaveLength(1);
@@ -277,7 +238,7 @@ describe("Error Handling Tests", () => {
       vi.mocked(parseWorldStatus).mockImplementation(() => {
         throw new Error("No world status data found during maintenance");
       });
-      vi.mocked(parseWorldStatusGeneric).mockImplementation(() => {
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
         throw new Error("No parseable world data during maintenance");
       });
 
@@ -306,7 +267,7 @@ describe("Error Handling Tests", () => {
           worlds: [], // Empty worlds array
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       const result = await client.getAllWorlds();
       expect(result).toEqual(mockDataCenters);
@@ -348,7 +309,7 @@ describe("Data Validation Tests", () => {
           ],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       const world = await client.checkWorldStatus("TestWorld");
 
@@ -383,7 +344,7 @@ describe("Data Validation Tests", () => {
           worlds: [],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       const dataCenter = await client.getDataCenter("TestDC");
 
@@ -425,7 +386,7 @@ describe("Data Validation Tests", () => {
           ],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       const world = await client.checkWorldStatus("ValidWorld");
       expect(world?.status).toBe("online");
@@ -458,7 +419,7 @@ describe("Data Validation Tests", () => {
           ],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       const world1 = await client.checkWorldStatus("World-With-Dashes");
       const world2 = await client.checkWorldStatus("World With Spaces");
@@ -486,7 +447,7 @@ describe("Data Validation Tests", () => {
           ],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       const dataCenter = await client.getDataCenter("Data-Center-With-Dashes");
       expect(dataCenter?.name).toBe("Data-Center-With-Dashes");
@@ -508,7 +469,7 @@ describe("Data Validation Tests", () => {
           ],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       // Test various case combinations
       const world1 = await client.checkWorldStatus("CamelCaseWorld");
@@ -535,7 +496,7 @@ describe("Data Validation Tests", () => {
         throw new Error("Fallback to generic");
       });
 
-      vi.mocked(parseWorldStatusGeneric).mockImplementation(() => {
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
         // Simulate slow parsing
         const start = Date.now();
         while (Date.now() - start < 50) {
@@ -585,7 +546,7 @@ describe("Data Validation Tests", () => {
       vi.mocked(parseWorldStatus).mockImplementation(() => {
         throw new Error("Fallback to generic");
       });
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(largeDataset);
+      vi.mocked(parseWorldStatus).mockReturnValue(largeDataset);
 
       const startTime = Date.now();
       const allWorlds = await client.getAllWorldsFlat();
@@ -633,7 +594,7 @@ describe("Data Validation Tests", () => {
           ],
         },
       ];
-      vi.mocked(parseWorldStatusGeneric).mockReturnValue(mockDataCenters);
+      vi.mocked(parseWorldStatus).mockReturnValue(mockDataCenters);
 
       // First call should fail
       await expect(client.getAllWorlds()).rejects.toThrow("Network timeout");
@@ -655,7 +616,7 @@ describe("Data Validation Tests", () => {
         throw new Error("Fallback to generic");
       });
 
-      vi.mocked(parseWorldStatusGeneric).mockImplementation(() => {
+      vi.mocked(parseWorldStatus).mockImplementation(() => {
         parseCallCount++;
         if (parseCallCount === 1) {
           throw new Error("Temporary parsing error");

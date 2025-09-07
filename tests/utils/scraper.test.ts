@@ -2,46 +2,206 @@ import { describe, it, expect, vi } from "vitest";
 import {
   fetchHtml,
   parseStatusText,
-  parseWorldStatusGeneric,
   parseWorldStatus,
 } from "../../src/utils/scraper.js";
 
-// Mock HTML content that simulates the Lodestone structure
+// Mock HTML content that mirrors the real Lodestone structure more accurately
+// The key insight is that when the complex HTML is parsed by node-html-parser,
+// the .text property collapses nested content with whitespace, making patterns like "Adamantoise\n\t\tCongested"
 const mockHtml = `
 <html>
   <body>
-    <div>
-      <div>
-        <div>
-          <div>
-            <h3>Aether</h3>
-            <ul>
-              <li>Adamantoise Standard</li>
-              <li>Cactuar Congested</li>
-              <li>Faerie Preferred</li>
-              <li>Gilgamesh Congested</li>
-              <li>Jenova Standard</li>
-            </ul>
+    <section class="ldst__contents--worldstatus">
+      <h2 class="world-dcgroup__header">Aether</h2>
+      <ul class="world-dcgroup__list">
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Adamantoise</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Congested</p>
+            </div>
+            <div class="world-list__create_character">
+              
+              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
+              
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div>
-        <div>
-          <div>
-            <h3>Crystal</h3>
-            <ul>
-              <li>Balmung Standard</li>
-              <li>Brynhildr Preferred</li>
-              <li>Coeurl Preferred</li>
-              <li>Diabolos Standard</li>
-              <li>Goblin Standard</li>
-            </ul>
+        </li>
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Cactuar</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Congested</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </li>
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Faerie</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"></i>
+            </div>
+          </div>
+        </li>
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Gilgamesh</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"></i>
+            </div>
+          </div>
+        </li>
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Jenova</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"></i>
+            </div>
+          </div>
+        </li>
+      </ul>
+      
+      <h2 class="world-dcgroup__header">Crystal</h2>
+      <ul class="world-dcgroup__list">
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Balmung</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Congested</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
+            </div>
+          </div>
+        </li>
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Brynhildr</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Congested</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
+            </div>
+          </div>
+        </li>
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Coeurl</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"></i>
+            </div>
+          </div>
+        </li>
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Diabolos</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Congested</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
+            </div>
+          </div>
+        </li>
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__status_icon">
+              <i class="world-ic__1 js__tooltip" data-tooltip="Online"></i>
+            </div>
+            <div class="world-list__world_name">
+              
+              <p>Goblin</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Congested</p>
+            </div>
+            <div class="world-list__create_character">
+              <i class="world-ic__unavailable js__tooltip" data-tooltip="Creation of New Characters Unavailable"></i>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
   </body>
 </html>
 `;
@@ -146,9 +306,9 @@ describe("parseStatusText", () => {
   });
 });
 
-describe("parseWorldStatusGeneric", () => {
-  it("should parse world status from generic HTML structure", () => {
-    const result = parseWorldStatusGeneric(mockHtml);
+describe("parseWorldStatus", () => {
+  it("should parse world status from semantic HTML structure", () => {
+    const result = parseWorldStatus(mockHtml);
 
     expect(result).toHaveLength(2);
 
@@ -163,13 +323,13 @@ describe("parseWorldStatusGeneric", () => {
     expect(adamantoise).toEqual({
       name: "Adamantoise",
       status: "online",
-      population: "standard",
-      newCharacterCreation: true,
+      population: "congested",
+      newCharacterCreation: false,
     });
 
-    const cactuar = aether?.worlds.find((w) => w.name === "Cactuar");
-    expect(cactuar?.population).toBe("congested");
-    expect(cactuar?.newCharacterCreation).toBe(false);
+    const faerie = aether?.worlds.find((w) => w.name === "Faerie");
+    expect(faerie?.population).toBe("standard");
+    expect(faerie?.newCharacterCreation).toBe(true);
 
     // Check second data center (Crystal)
     const crystal = result.find((dc) => dc.name === "Crystal");
@@ -179,7 +339,7 @@ describe("parseWorldStatusGeneric", () => {
   });
 
   it("should handle empty HTML", () => {
-    const result = parseWorldStatusGeneric("<html></html>");
+    const result = parseWorldStatus("<html></html>");
     expect(result).toEqual([]);
   });
 
@@ -196,110 +356,7 @@ describe("parseWorldStatusGeneric", () => {
         </body>
       </html>
     `;
-    const result = parseWorldStatusGeneric(badHtml);
-    expect(result).toEqual([]);
-  });
-});
-
-describe("parseWorldStatus", () => {
-  const mockSpecificHtml = `
-<html>
-  <body>
-    <div class="worldstatus__datacenter">
-      <h3>Aether</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">Adamantoise</span>
-          <span class="worldstatus__status">Standard</span>
-        </li>
-        <li>
-          <span class="worldstatus__world-name">Cactuar</span>
-          <span class="worldstatus__status">Congested</span>
-        </li>
-      </ul>
-    </div>
-    <div class="worldstatus__datacenter">
-      <h3>Chaos</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">Cerberus</span>
-          <span class="worldstatus__status">Preferred</span>
-        </li>
-      </ul>
-    </div>
-  </body>
-</html>
-  `;
-
-  it("should parse world status with specific selectors", () => {
-    const result = parseWorldStatus(mockSpecificHtml);
-
-    expect(result).toHaveLength(2);
-
-    // Check Aether data center
-    const aether = result.find((dc) => dc.name === "Aether");
-    expect(aether).toBeDefined();
-    expect(aether?.region).toBe("na");
-    expect(aether?.worlds).toHaveLength(2);
-
-    const adamantoise = aether?.worlds.find((w) => w.name === "Adamantoise");
-    expect(adamantoise).toEqual({
-      name: "Adamantoise",
-      status: "online",
-      population: "standard",
-      newCharacterCreation: true,
-    });
-
-    // Check Chaos data center
-    const chaos = result.find((dc) => dc.name === "Chaos");
-    expect(chaos?.region).toBe("eu");
-  });
-
-  it("should throw error when no specific selectors found", () => {
-    const htmlWithoutSelectors =
-      "<html><body><div>No selectors</div></body></html>";
-    expect(() => parseWorldStatus(htmlWithoutSelectors)).toThrow(
-      "Could not find world status containers",
-    );
-  });
-
-  it("should skip sections without h3 elements", () => {
-    const htmlMissingH3 = `
-<html>
-  <body>
-    <div class="worldstatus__datacenter">
-      <ul><li><span class="worldstatus__world-name">World</span></li></ul>
-    </div>
-    <div class="worldstatus__datacenter">
-      <h3>Aether</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">Adamantoise</span>
-          <span class="worldstatus__status">Standard</span>
-        </li>
-      </ul>
-    </div>
-  </body>
-</html>
-    `;
-
-    const result = parseWorldStatus(htmlMissingH3);
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("Aether");
-  });
-
-  it("should handle data centers without world lists", () => {
-    const htmlNoWorldList = `
-<html>
-  <body>
-    <div class="worldstatus__datacenter">
-      <h3>EmptyDataCenter</h3>
-    </div>
-  </body>
-</html>
-    `;
-
-    const result = parseWorldStatus(htmlNoWorldList);
+    const result = parseWorldStatus(badHtml);
     expect(result).toEqual([]);
   });
 });
@@ -314,15 +371,23 @@ describe("inferRegion", () => {
       const html = `
 <html>
   <body>
-    <div class="worldstatus__datacenter">
-      <h3>${dcName}</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">TestWorld</span>
-          <span class="worldstatus__status">Standard</span>
+    <section class="ldst__contents--worldstatus">
+      <h2 class="world-dcgroup__header">${dcName}</h2>
+      <ul class="world-dcgroup__list">
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__world_name">
+              
+              <p>TestWorld</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+          </div>
         </li>
       </ul>
-    </div>
+    </section>
   </body>
 </html>
       `;
@@ -338,15 +403,23 @@ describe("inferRegion", () => {
       const html = `
 <html>
   <body>
-    <div class="worldstatus__datacenter">
-      <h3>${dcName}</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">TestWorld</span>
-          <span class="worldstatus__status">Standard</span>
+    <section class="ldst__contents--worldstatus">
+      <h2 class="world-dcgroup__header">${dcName}</h2>
+      <ul class="world-dcgroup__list">
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__world_name">
+              
+              <p>TestWorld</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+          </div>
         </li>
       </ul>
-    </div>
+    </section>
   </body>
 </html>
       `;
@@ -362,15 +435,23 @@ describe("inferRegion", () => {
       const html = `
 <html>
   <body>
-    <div class="worldstatus__datacenter">
-      <h3>${dcName}</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">TestWorld</span>
-          <span class="worldstatus__status">Standard</span>
+    <section class="ldst__contents--worldstatus">
+      <h2 class="world-dcgroup__header">${dcName}</h2>
+      <ul class="world-dcgroup__list">
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__world_name">
+              
+              <p>TestWorld</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+          </div>
         </li>
       </ul>
-    </div>
+    </section>
   </body>
 </html>
       `;
@@ -383,15 +464,23 @@ describe("inferRegion", () => {
     const html = `
 <html>
   <body>
-    <div class="worldstatus__datacenter">
-      <h3>Materia</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">TestWorld</span>
-          <span class="worldstatus__status">Standard</span>
+    <section class="ldst__contents--worldstatus">
+      <h2 class="world-dcgroup__header">Materia</h2>
+      <ul class="world-dcgroup__list">
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__world_name">
+              
+              <p>TestWorld</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+          </div>
         </li>
       </ul>
-    </div>
+    </section>
   </body>
 </html>
     `;
@@ -403,15 +492,23 @@ describe("inferRegion", () => {
     const html = `
 <html>
   <body>
-    <div class="worldstatus__datacenter">
-      <h3>UnknownDataCenter</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">TestWorld</span>
-          <span class="worldstatus__status">Standard</span>
+    <section class="ldst__contents--worldstatus">
+      <h2 class="world-dcgroup__header">UnknownDataCenter</h2>
+      <ul class="world-dcgroup__list">
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__world_name">
+              
+              <p>TestWorld</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+          </div>
         </li>
       </ul>
-    </div>
+    </section>
   </body>
 </html>
     `;
@@ -423,15 +520,23 @@ describe("inferRegion", () => {
     const html = `
 <html>
   <body>
-    <div class="worldstatus__datacenter">
-      <h3>CHAOS</h3>
-      <ul>
-        <li>
-          <span class="worldstatus__world-name">TestWorld</span>
-          <span class="worldstatus__status">Standard</span>
+    <section class="ldst__contents--worldstatus">
+      <h2 class="world-dcgroup__header">CHAOS</h2>
+      <ul class="world-dcgroup__list">
+        <li class="item-list">
+          <div class="world-list__item">
+            <div class="world-list__world_name">
+              
+              <p>TestWorld</p>
+              
+            </div>
+            <div class="world-list__world_category">
+              <p>Standard</p>
+            </div>
+          </div>
         </li>
       </ul>
-    </div>
+    </section>
   </body>
 </html>
     `;

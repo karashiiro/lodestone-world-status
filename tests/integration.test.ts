@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { LodestoneWorldStatus } from "../src/index.js";
 
 describe("Integration Tests", () => {
@@ -125,41 +125,4 @@ describe("Integration Tests", () => {
     // Should be fast due to caching (under 5 seconds even with network)
     expect(duration).toBeLessThan(5000);
   }, 10000);
-
-  it("should test parsing fallback mechanism", async () => {
-    // This test temporarily mocks parseWorldStatus to fail
-    // to test that the fallback to parseWorldStatusGeneric works
-
-    const originalModule = await import("../src/utils/scraper.js");
-    const parseWorldStatusSpy = vi.spyOn(originalModule, "parseWorldStatus");
-    const parseWorldStatusGenericSpy = vi.spyOn(
-      originalModule,
-      "parseWorldStatusGeneric",
-    );
-
-    // Make specific parsing fail
-    parseWorldStatusSpy.mockImplementationOnce(() => {
-      throw new Error("Specific selectors not found");
-    });
-
-    // Let generic parsing work normally
-    parseWorldStatusGenericSpy.mockImplementationOnce(
-      originalModule.parseWorldStatusGeneric,
-    );
-
-    const client = new LodestoneWorldStatus();
-    const result = await client.getAllWorlds();
-
-    // Should still get results via fallback
-    expect(Array.isArray(result)).toBe(true);
-    expect(result.length).toBeGreaterThan(0);
-
-    // Verify both functions were called
-    expect(parseWorldStatusSpy).toHaveBeenCalled();
-    expect(parseWorldStatusGenericSpy).toHaveBeenCalled();
-
-    // Cleanup
-    parseWorldStatusSpy.mockRestore();
-    parseWorldStatusGenericSpy.mockRestore();
-  }, 15000);
 });

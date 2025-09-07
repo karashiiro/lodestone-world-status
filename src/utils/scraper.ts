@@ -1,7 +1,6 @@
 import debug from "debug";
 import { parse } from "node-html-parser";
 import type {
-  WorldStatus,
   WorldStatusRaw,
   DataCenter,
   ParsedStatus,
@@ -29,83 +28,10 @@ export async function fetchHtml(url: string): Promise<string> {
 }
 
 /**
- * Parses world status information from HTML content using specific selectors
+ * Parses world status information from HTML content using semantic HTML structure
  */
 export function parseWorldStatus(html: string): DataCenter[] {
-  log("Parsing HTML with specific selectors (.worldstatus__datacenter)");
-  const root = parse(html);
-  const dataCenters: DataCenter[] = [];
-
-  // Look for data center sections with specific classes
-  const datacenterSections = root.querySelectorAll(".worldstatus__datacenter");
-  log(
-    "Found %d data center sections with specific selectors",
-    datacenterSections.length,
-  );
-
-  if (datacenterSections.length === 0) {
-    log("No world status containers found with specific selectors");
-    throw new Error("Could not find world status containers");
-  }
-
-  for (const section of datacenterSections) {
-    const dcNameElement = section.querySelector("h3");
-    if (!dcNameElement) {
-      log("Skipping section without h3 element");
-      continue;
-    }
-
-    const dcName = dcNameElement.text.trim();
-    log("Processing data center: %s", dcName);
-    const worlds: WorldStatus[] = [];
-
-    // Find world list within this data center
-    const worldList = section.querySelector("ul");
-    if (worldList) {
-      const worldItems = worldList.querySelectorAll("li");
-      log("Found %d world items in %s", worldItems.length, dcName);
-
-      for (const item of worldItems) {
-        const worldName = item
-          .querySelector(".worldstatus__world-name")
-          ?.text.trim();
-        const statusText = item
-          .querySelector(".worldstatus__status")
-          ?.text.trim();
-
-        if (worldName && statusText) {
-          log("Found world: %s (%s)", worldName, statusText);
-          worlds.push({
-            name: createWorldName(worldName),
-            ...parseStatusText(statusText),
-          });
-        }
-      }
-    }
-
-    if (worlds.length > 0) {
-      log("Added data center %s with %d worlds", dcName, worlds.length);
-      dataCenters.push({
-        name: createDataCenterName(dcName),
-        region: inferRegion(dcName),
-        worlds,
-      });
-    }
-  }
-
-  log(
-    "Specific selector parsing complete: %d data centers",
-    dataCenters.length,
-  );
-  return dataCenters;
-}
-
-/**
- * Alternative parsing method using more generic selectors
- * Fallback for when specific classes aren't available
- */
-export function parseWorldStatusGeneric(html: string): DataCenter[] {
-  log("Parsing HTML with generic selectors (h2,h3,h4 + ul)");
+  log("Parsing HTML with semantic selectors (h2,h3,h4 + ul)");
   const root = parse(html);
   const dataCenters: DataCenter[] = [];
   const processedDataCenters = new Set<string>();
@@ -180,7 +106,7 @@ export function parseWorldStatusGeneric(html: string): DataCenter[] {
     }
   }
 
-  log("Generic parsing complete: %d data centers", dataCenters.length);
+  log("World status parsing complete: %d data centers", dataCenters.length);
   return dataCenters;
 }
 

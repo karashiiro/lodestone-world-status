@@ -18,10 +18,7 @@ vi.mock("../src/utils/scraper.js", () => ({
       </body>
     </html>
   `),
-  parseWorldStatus: vi.fn().mockImplementation(() => {
-    throw new Error("No specific selectors found");
-  }),
-  parseWorldStatusGeneric: vi.fn().mockReturnValue([
+  parseWorldStatus: vi.fn().mockReturnValue([
     {
       name: "Aether",
       region: "na",
@@ -186,11 +183,9 @@ describe("LodestoneWorldStatus - Large Dataset Handling", () => {
   beforeEach(async () => {
     // Mock larger dataset for these tests
     const scraperModule = await import("../src/utils/scraper.js");
-    const parseWorldStatusGenericMock = vi.mocked(
-      scraperModule.parseWorldStatusGeneric,
-    );
+    const parseWorldStatusMock = vi.mocked(scraperModule.parseWorldStatus);
 
-    parseWorldStatusGenericMock.mockReturnValue([
+    parseWorldStatusMock.mockReturnValue([
       createTestDataCenter(
         "Aether",
         "na",
@@ -268,11 +263,9 @@ describe("LodestoneWorldStatus - Large Dataset Handling", () => {
 describe("LodestoneWorldStatus - Unknown Data Centers", () => {
   beforeEach(async () => {
     const scraperModule = await import("../src/utils/scraper.js");
-    const parseWorldStatusGenericMock = vi.mocked(
-      scraperModule.parseWorldStatusGeneric,
-    );
+    const parseWorldStatusMock = vi.mocked(scraperModule.parseWorldStatus);
 
-    parseWorldStatusGenericMock.mockReturnValue([
+    parseWorldStatusMock.mockReturnValue([
       createTestDataCenter(
         "UnknownDataCenter",
         "na", // Should default to NA for unknown DCs
