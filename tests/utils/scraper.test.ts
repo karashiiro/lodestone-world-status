@@ -292,10 +292,10 @@ describe("inferRegion", () => {
     expect(result[0]?.region).toBe("oc");
   });
 
-  it("should default to NA region for unknown data centers", () => {
+  it("should default to unknown region for unknown data centers", () => {
     const html = createTestHtml("UnknownDataCenter");
     const result = parseWorldStatus(html);
-    expect(result[0]?.region).toBe("na");
+    expect(result[0]?.region).toBe("unknown");
   });
 
   it("should handle case insensitive data center names", () => {

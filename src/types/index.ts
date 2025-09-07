@@ -16,7 +16,7 @@ export type PopulationLevel =
   | "congested"
   | "preferred+"
   | "unknown";
-export type Region = "na" | "eu" | "jp" | "oc";
+export type Region = "na" | "eu" | "jp" | "oc" | "unknown";
 
 export interface WorldStatus {
   readonly name: WorldName;

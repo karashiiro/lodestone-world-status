@@ -179,6 +179,6 @@ function inferRegion(dcName: string): Region {
     return "oc";
   }
 
-  // Default to NA if unknown
-  return "na";
+  // Default to unknown if data center not recognized
+  return "unknown";
 }
