@@ -9,8 +9,13 @@ export function createTestDataCenter(
   region: "na" | "eu" | "jp" | "oc" = "na",
   worlds: Array<{
     name: string;
-    status: "online" | "offline" | "maintenance";
-    population: "standard" | "preferred" | "congested" | "preferred+" | "new";
+    status: "online" | "maintenance" | "partial-maintenance" | "unknown";
+    population:
+      | "standard"
+      | "preferred"
+      | "congested"
+      | "preferred+"
+      | "unknown";
     newCharacterCreation: boolean;
   }> = [],
 ): DataCenter {
@@ -31,13 +36,17 @@ export function createTestDataCenter(
  */
 export function createTestWorld(
   name: string,
-  status: "online" | "offline" | "maintenance" = "online",
+  status:
+    | "online"
+    | "maintenance"
+    | "partial-maintenance"
+    | "unknown" = "online",
   population:
     | "standard"
     | "preferred"
     | "congested"
     | "preferred+"
-    | "new" = "standard",
+    | "unknown" = "standard",
   newCharacterCreation: boolean = true,
 ): WorldStatus {
   return {

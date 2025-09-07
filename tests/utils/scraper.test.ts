@@ -9,7 +9,7 @@ import {
 function createWorldListItem(
   worldName: string,
   status: string,
-  canCreateCharacter = true
+  canCreateCharacter = true,
 ): string {
   const characterIcon = canCreateCharacter
     ? 'world-ic__available js__tooltip" data-tooltip="Creation of New Characters Available"'
@@ -40,15 +40,15 @@ function createWorldListItem(
 
 function createDataCenterSection(
   dcName: string,
-  worlds: Array<{ name: string; status: string; canCreate?: boolean }>
+  worlds: Array<{ name: string; status: string; canCreate?: boolean }>,
 ): string {
   const worldItems = worlds
     .map((w) =>
       createWorldListItem(
         w.name,
         w.status,
-        w.canCreate ?? w.status !== "Congested"
-      )
+        w.canCreate ?? w.status !== "Congested",
+      ),
     )
     .join("");
 
@@ -61,7 +61,7 @@ function createDataCenterSection(
 function createTestHtml(
   dcName: string,
   worldName = "TestWorld",
-  status = "Standard"
+  status = "Standard",
 ): string {
   return `
 <html>
@@ -84,7 +84,7 @@ const mockHtml = `
         { name: "Faerie", status: "Standard" },
         { name: "Gilgamesh", status: "Standard" },
         { name: "Jenova", status: "Standard" },
-      ]
+      ],
     )}
       ${createDataCenterSection("Crystal", [
         { name: "Balmung", status: "Congested" },
@@ -102,7 +102,7 @@ describe("parseStatusText", () => {
   it("should parse standard status", () => {
     const result = parseStatusText("Standard");
     expect(result).toEqual({
-      status: "online",
+      status: "unknown",
       population: "standard",
       newCharacterCreation: true,
     });
@@ -111,7 +111,7 @@ describe("parseStatusText", () => {
   it("should parse preferred status", () => {
     const result = parseStatusText("Preferred");
     expect(result).toEqual({
-      status: "online",
+      status: "unknown",
       population: "preferred",
       newCharacterCreation: true,
     });
@@ -120,7 +120,7 @@ describe("parseStatusText", () => {
   it("should parse preferred+ status", () => {
     const result = parseStatusText("Preferred+");
     expect(result).toEqual({
-      status: "online",
+      status: "unknown",
       population: "preferred+",
       newCharacterCreation: true,
     });
@@ -129,18 +129,9 @@ describe("parseStatusText", () => {
   it("should parse congested status", () => {
     const result = parseStatusText("Congested");
     expect(result).toEqual({
-      status: "online",
+      status: "unknown",
       population: "congested",
       newCharacterCreation: false,
-    });
-  });
-
-  it("should parse new status", () => {
-    const result = parseStatusText("New");
-    expect(result).toEqual({
-      status: "online",
-      population: "new",
-      newCharacterCreation: true,
     });
   });
 
@@ -148,7 +139,7 @@ describe("parseStatusText", () => {
     const result = parseStatusText("Maintenance");
     expect(result).toEqual({
       status: "maintenance",
-      population: "standard",
+      population: "unknown",
       newCharacterCreation: true,
     });
   });
@@ -162,8 +153,8 @@ describe("parseStatusText", () => {
   it("should handle empty string input", () => {
     const result = parseStatusText("");
     expect(result).toEqual({
-      status: "online",
-      population: "standard",
+      status: "unknown",
+      population: "unknown",
       newCharacterCreation: true,
     });
   });
@@ -171,8 +162,8 @@ describe("parseStatusText", () => {
   it("should handle whitespace-only input", () => {
     const result = parseStatusText("   ");
     expect(result).toEqual({
-      status: "online",
-      population: "standard",
+      status: "unknown",
+      population: "unknown",
       newCharacterCreation: true,
     });
   });
@@ -180,21 +171,30 @@ describe("parseStatusText", () => {
   it("should handle invalid status text", () => {
     const result = parseStatusText("InvalidStatus");
     expect(result).toEqual({
-      status: "online",
-      population: "standard",
+      status: "unknown",
+      population: "unknown",
       newCharacterCreation: true,
     });
-  });
-
-  it("should handle offline status", () => {
-    const result = parseStatusText("Offline");
-    expect(result.status).toBe("offline");
   });
 
   it("should handle maintenance with population", () => {
     const result = parseStatusText("Maintenance Preferred");
     expect(result.status).toBe("maintenance");
     expect(result.population).toBe("preferred");
+  });
+
+  it("should handle partial maintenance status", () => {
+    const result = parseStatusText("Partial Maintenance");
+    expect(result.status).toBe("partial-maintenance");
+    expect(result.population).toBe("unknown");
+    expect(result.newCharacterCreation).toBe(true);
+  });
+
+  it("should return unknown population for unrecognized population text", () => {
+    const result = parseStatusText("SomeUnknownPopulationStatus");
+    expect(result.status).toBe("unknown");
+    expect(result.population).toBe("unknown");
+    expect(result.newCharacterCreation).toBe(true);
   });
 });
 
@@ -214,7 +214,7 @@ describe("parseWorldStatus", () => {
     const adamantoise = aether?.worlds.find((w) => w.name === "Adamantoise");
     expect(adamantoise).toEqual({
       name: "Adamantoise",
-      status: "online",
+      status: "unknown",
       population: "congested",
       newCharacterCreation: false,
     });
@@ -325,7 +325,7 @@ describe("fetchHtml", () => {
     });
 
     await expect(fetchHtml("https://example.com/404")).rejects.toThrow(
-      "HTTP error! status: 404"
+      "HTTP error! status: 404",
     );
   });
 
@@ -333,7 +333,7 @@ describe("fetchHtml", () => {
     global.fetch = vi.fn().mockRejectedValue(new Error("Network error"));
 
     await expect(fetchHtml("https://example.com")).rejects.toThrow(
-      "Network error"
+      "Network error",
     );
   });
 });

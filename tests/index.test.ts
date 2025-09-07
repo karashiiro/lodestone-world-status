@@ -212,7 +212,7 @@ describe("LodestoneWorldStatus - Large Dataset Handling", () => {
         Array.from({ length: 25 }, (_, i) => ({
           name: `EuWorld${i + 1}`,
           status: "online",
-          population: "new",
+          population: "preferred",
           newCharacterCreation: true,
         })),
       ),

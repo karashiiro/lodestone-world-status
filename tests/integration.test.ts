@@ -27,13 +27,18 @@ describe("Integration Tests", () => {
       expect(firstWorld).toHaveProperty("newCharacterCreation");
 
       // Validate status values
-      expect(["online", "offline", "maintenance"]).toContain(firstWorld.status);
+      expect([
+        "online",
+        "maintenance",
+        "partial-maintenance",
+        "unknown",
+      ]).toContain(firstWorld.status);
       expect([
         "standard",
         "preferred",
         "congested",
         "preferred+",
-        "new",
+        "unknown",
       ]).toContain(firstWorld.population);
       expect(typeof firstWorld.newCharacterCreation).toBe("boolean");
     }

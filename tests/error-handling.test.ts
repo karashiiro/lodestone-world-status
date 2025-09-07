@@ -326,13 +326,18 @@ describe("Data Validation Tests", () => {
       expect(typeof world?.newCharacterCreation).toBe("boolean");
 
       // Validate enum values
-      expect(["online", "offline", "maintenance"]).toContain(world?.status);
+      expect([
+        "online",
+        "maintenance",
+        "partial-maintenance",
+        "unknown",
+      ]).toContain(world?.status);
       expect([
         "standard",
         "preferred",
         "congested",
         "preferred+",
-        "new",
+        "unknown",
       ]).toContain(world?.population);
     });
 
@@ -441,7 +446,7 @@ describe("Data Validation Tests", () => {
             {
               name: "TestWorld",
               status: "online" as const,
-              population: "new" as const,
+              population: "standard" as const,
               newCharacterCreation: true,
             },
           ],
@@ -536,8 +541,8 @@ describe("Data Validation Tests", () => {
           name: `World${dcIndex}-${worldIndex}`,
           status: "online" as const,
           population: (
-            ["standard", "preferred", "congested", "preferred+", "new"] as const
-          )[worldIndex % 5],
+            ["standard", "preferred", "congested", "preferred+"] as const
+          )[worldIndex % 4],
           newCharacterCreation: worldIndex % 2 === 0,
         })),
       }));

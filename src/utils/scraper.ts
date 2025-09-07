@@ -64,7 +64,7 @@ export function parseWorldStatus(html: string): DataCenter[] {
 
           // Pattern: "WorldName Status" or similar
           const match = text.match(
-            /^([A-Za-z\s]+?)\s+(Standard|Preferred|Congested|Preferred\+|New)$/,
+            /^([A-Za-z\s]+?)\s+(Standard|Preferred|Congested|Preferred\+)$/,
           );
           if (match) {
             log(
@@ -116,13 +116,14 @@ export function parseWorldStatus(html: string): DataCenter[] {
 export function parseStatusText(statusText: string): ParsedStatus {
   const text = statusText.toLowerCase().trim();
 
-  // Default to online unless we detect otherwise
-  let status: "online" | "offline" | "maintenance" = "online";
+  // Determine server status (only from explicit maintenance indicators)
+  let status: "online" | "maintenance" | "partial-maintenance" | "unknown" =
+    "unknown";
 
-  if (text.includes("maintenance")) {
+  if (text.includes("partial maintenance")) {
+    status = "partial-maintenance";
+  } else if (text.includes("maintenance")) {
     status = "maintenance";
-  } else if (text.includes("offline")) {
-    status = "offline";
   }
 
   // Determine population status
@@ -131,7 +132,7 @@ export function parseStatusText(statusText: string): ParsedStatus {
     | "preferred"
     | "congested"
     | "preferred+"
-    | "new" = "standard";
+    | "unknown" = "unknown";
   let newCharacterCreation = true;
 
   if (text.includes("preferred+")) {
@@ -141,8 +142,8 @@ export function parseStatusText(statusText: string): ParsedStatus {
   } else if (text.includes("congested")) {
     population = "congested";
     newCharacterCreation = false;
-  } else if (text.includes("new")) {
-    population = "new";
+  } else if (text.includes("standard")) {
+    population = "standard";
   }
 
   return {

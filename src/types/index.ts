@@ -5,13 +5,17 @@ export type WorldName = string & { readonly __brand: "WorldName" };
 export type DataCenterName = string & { readonly __brand: "DataCenterName" };
 
 // More expressive literal types
-export type WorldStatusType = "online" | "offline" | "maintenance";
+export type WorldStatusType =
+  | "online"
+  | "maintenance"
+  | "partial-maintenance"
+  | "unknown";
 export type PopulationLevel =
   | "standard"
   | "preferred"
   | "congested"
   | "preferred+"
-  | "new";
+  | "unknown";
 export type Region = "na" | "eu" | "jp" | "oc";
 
 export interface WorldStatus {
